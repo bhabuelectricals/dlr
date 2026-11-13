@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Labour Report – Bhabu Electricals</title>
+<link rel="icon" href="logo.png">
+<style>
+:root{--navy:#17617F;--lab:#DCE9F0;--inp:#FFF9DB;--line:#9aa9b1;--ok:#1e7b3a;--err:#b3261e}
+*{box-sizing:border-box}
+body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#eef2f4;color:#111}
+.page{max-width:900px;margin:0 auto;background:#fff;padding:18px 22px 30px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:3px solid var(--navy);padding-bottom:10px;margin-bottom:14px}
+header img{height:56px}
+header h1{margin:0;font-size:22px;color:var(--navy);text-align:right;line-height:1.2}
+.fields{display:grid;grid-template-columns:200px 1fr;border:1px solid var(--line)}
+.fields>label{background:var(--lab);color:var(--navy);font-weight:bold;padding:9px 10px;border-bottom:1px solid var(--line);font-size:14px;display:flex;align-items:center}
+.fields>div{border-bottom:1px solid var(--line)}
+.fields>div:last-child,.fields>label:nth-last-child(2){border-bottom:0}
+input,textarea,select{font:inherit;font-size:14px;width:100%;border:0;background:var(--inp);padding:9px 10px;outline:none;border-radius:0}
+input:focus,textarea:focus,select:focus{background:#fff3b0}
+.bar{background:var(--navy);color:#fff;font-weight:bold;padding:7px 10px;margin-top:16px;font-size:14px;display:flex;justify-content:space-between;align-items:center}
+.bar button{background:#fff;color:var(--navy);border:0;padding:4px 10px;font-weight:bold;cursor:pointer;border-radius:3px;font-size:12px}
+table{width:100%;border-collapse:collapse}
+th{background:var(--lab);color:var(--navy);font-size:12px;padding:7px 4px;border:1px solid var(--line)}
+td{border:1px solid var(--line);padding:0}
+td.sl{width:38px;text-align:center;font-size:12px;color:#555}
+td.hr{width:70px;text-align:center;background:#eaf1f5;font-size:13px}
+td.x{width:30px;text-align:center}
+td.x button{border:0;background:none;color:var(--err);cursor:pointer;font-size:16px}
+.deft{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border:1px solid var(--line);border-top:0;background:#f4f8fa;padding:8px 10px;font-size:13px;color:var(--navy)}
+.deft label{display:flex;align-items:center;gap:6px;font-weight:bold}.deft input{width:120px;border:1px solid var(--line)}
+.deft button{background:var(--navy);color:#fff;border:0;padding:7px 12px;border-radius:3px;cursor:pointer;font-weight:bold}
+.hint{font-size:11px;color:#555;flex-basis:100%}
+.empty{padding:16px;text-align:center;color:#666;border:1px solid var(--line);border-top:0;font-size:14px}
+td.pr{width:52px;text-align:center}td.pr input{width:20px;height:20px;background:none}
+tr.absent td{opacity:.45}tr.absent td.pr{opacity:1}
+td.nm input[readonly]{background:#fff;font-weight:bold}
+.totals{flex-wrap:wrap}
+.totals{display:flex;gap:0;border:1px solid var(--line);border-top:0;background:#eaf1f5;color:var(--navy);font-weight:bold;font-size:13px}
+.totals div{flex:1;padding:8px 10px}
+textarea{min-height:95px;resize:vertical}
+.box{border:1px solid var(--line);border-top:0}
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;align-items:center}
+.actions button{padding:12px 22px;font-size:15px;font-weight:bold;border:0;border-radius:4px;cursor:pointer}
+#submit{background:var(--navy);color:#fff}
+#submit:disabled{opacity:.6;cursor:wait}
+.sec{background:#fff;color:var(--navy);border:1px solid var(--navy)!important}
+#msg{margin-top:12px;font-weight:bold;font-size:14px;min-height:20px}
+.pin{display:flex;align-items:center;gap:8px;margin-left:auto}
+.pin input{width:130px;border:1px solid var(--line)}
+.note{font-size:12px;color:#555;margin-top:8px}
+@media(max-width:640px){
+ .page{padding:12px}.fields{grid-template-columns:1fr}
+ header h1{font-size:17px}header img{height:42px}
+ table,thead,tbody,tr,td{display:block}
+ thead{display:none}
+ tr.lab{display:grid;grid-template-columns:44px 1fr 1fr 40px;border:1px solid var(--line);margin-top:8px}
+ tr.lab td{border:0;border-bottom:1px solid #ddd}
+ tr.lab td.pr{grid-row:1;width:auto}
+ tr.lab td.sl{display:none}
+ tr.lab td.nm{grid-column:2/4}
+ tr.lab td.x{grid-column:4;grid-row:1}
+ tr.lab td.tr{grid-column:1/5}
+ tr.lab td.hr{width:auto}
+ tr.lab td.ti{grid-column:1/3;display:flex;align-items:center;font-size:12px;font-weight:bold;color:var(--navy);padding-left:10px}
+ tr.lab td.to{grid-column:3/5;display:flex;align-items:center;font-size:12px;font-weight:bold;color:var(--navy);padding-left:6px}
+ tr.lab td.ti::before{content:"In";margin-right:8px}
+ tr.lab td.to::before{content:"Out";margin-right:8px}
+ tr.lab td.hr{grid-column:1/5}
+}
+@media print{
+ body{background:#fff}.page{padding:0;max-width:none}
+ .deft,.empty,.actions,#msg,.bar button,td.x,th.x,.note,.pin,td.pr,th:first-child,tr.absent{display:none!important}
+ input,textarea,select{background:#fff!important}
+ textarea{min-height:60px}
+ select{-webkit-appearance:none;appearance:none}
+}
+</style>
+</head>
+<body>
+<div class="page">
+<header>
+  <img src="logo.png" alt="Bhabu Electricals">
+  <h1>DAILY LABOUR REPORT (DLR)</h1>
+</header>
+
+<div class="fields">
+  <label for="project">Project Name</label><div><select id="project"><option value="">– Select project –</option></select></div>
+  <label for="supervisor">Supervisor Name</label><div><input id="supervisor" autocomplete="off" placeholder="Supervisor in-charge on site (auto-filled, editable)"></div>
+  <label for="date">Date</label><div><input id="date" type="date"></div>
+</div>
+
+<div class="bar"><span>LABOUR IN / OUT TIME</span><button type="button" id="addRow">+ Add other labour</button></div>
+<div class="deft">
+  <b>Site default timing:</b>
+  <label>In <input id="defIn" type="time"></label>
+  <label>Out <input id="defOut" type="time"></label>
+  <button type="button" id="applyAll">Apply to all</button>
+  <span class="hint">Applies to everyone who has not been edited individually. Tick/untick <b>Present</b> per person.</span>
+</div>
+<table>
+  <thead><tr><th style="width:52px">Present</th><th>Sl.</th><th>Labour Name</th><th style="width:140px">Trade / Category</th><th style="width:105px">In Time</th><th style="width:105px">Out Time</th><th>Hours</th><th class="x"></th></tr></thead>
+  <tbody id="labour"></tbody>
+</table>
+<div class="empty" id="emptyMsg">Select a project to list its employees.</div>
+<div class="totals"><div>On Site (listed): <span id="tAll">0</span></div><div>Present: <span id="tLab">0</span></div><div>Absent: <span id="tAbs">0</span></div><div>Man-Hours: <span id="tHrs">0.00</span></div></div>
+
+<div class="bar">OVERALL WORK PLANNED (TODAY)</div><div class="box"><textarea id="planned"></textarea></div>
+<div class="bar">OVERALL WORK EXECUTED (TODAY)</div><div class="box"><textarea id="executed"></textarea></div>
+<div class="bar">OVERALL WORK COMPLETED (TODAY)</div><div class="box"><textarea id="completed"></textarea></div>
+<div class="bar">NEXT DAY – WORK PLAN</div><div class="box"><textarea id="nextplan"></textarea></div>
+<div class="bar">REMARKS</div><div class="box"><textarea id="remarks"></textarea></div>
+
+<div class="actions">
+  <button id="submit" type="button">Submit DLR</button>
+  <button class="sec" type="button" onclick="window.print()">Print / Save as PDF</button>
+  <button class="sec" type="button" id="clear">Clear form</button>
+  <div class="pin"><label for="pin" style="font-size:13px;font-weight:bold;color:var(--navy)">Site PIN</label><input id="pin" type="password" autocomplete="off" inputmode="numeric"></div>
+</div>
+<div id="msg"></div>
+<div class="note">Submitting again for the same project and date replaces the earlier entry. Your entries are auto-saved on this device until submitted. Employee and project lists come from the Google Sheet.</div>
+</div>
+
+<script>
+/* ============ CONFIGURATION ============ */
+// Paste the Web app URL you get after deploying Code.gs (see README.md)
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzNtVw6qCTnK6qfCaf6TUls1PBdRL21_MiQdEx6wG5whap088tst4iNJMLnwm9a0Ten/exec";
+const TRADES = ["Electrician","Wireman","Helper","Supervisor","Foreman","Cable Jointer","Panel Technician","Fitter","Lineman","Welder","Rigger","Other"];
+/* ======================================= */
+
+const $ = id => document.getElementById(id);
+const tbody = $("labour"), msg = $("msg");
+let DATA = {projects:[], employees:[]};
+
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
+function row(e){   // e: {name, trade, manual, in, out, present}
+  const tr = document.createElement("tr"); tr.className="lab"; tr.dataset.manual = e.manual?"1":"";
+  tr.innerHTML = `<td class="pr"><input type="checkbox" class="pres" ${e.present===false?"":"checked"}></td><td class="sl"></td>
+   <td class="nm"><input class="name" value="${esc(e.name||"")}" ${e.manual?'placeholder="Labour name"':"readonly"}></td>
+   <td class="tr"><select class="trade"><option value=""></option>${TRADES.map(t=>`<option${t===e.trade?" selected":""}>${t}</option>`).join("")}</select></td>
+   <td class="ti"><input class="tin" type="time" value="${e.in||""}"></td><td class="to"><input class="tout" type="time" value="${e.out||""}"></td>
+   <td class="hr">–</td><td class="x">${e.manual?'<button type="button" title="Remove" tabindex="-1">✕</button>':""}</td>`;
+  if(e.trade && !TRADES.includes(e.trade)){ const o=document.createElement("option"); o.textContent=e.trade; tr.querySelector(".trade").appendChild(o); tr.querySelector(".trade").value=e.trade; }
+  if(e.inDirty) tr.dataset.inDirty="1"; if(e.outDirty) tr.dataset.outDirty="1";
+  tr.querySelector(".tin").addEventListener("input",()=>tr.dataset.inDirty="1");
+  tr.querySelector(".tout").addEventListener("input",()=>tr.dataset.outDirty="1");
+  tr.querySelector(".pres").addEventListener("change",()=>{calc();save();});
+  const x=tr.querySelector(".x button"); if(x) x.onclick=()=>{tr.remove();renum();calc();save();};
+  tbody.appendChild(tr); renum();
+}
+function renum(){ [...tbody.children].forEach((tr,i)=>tr.querySelector(".sl").textContent=i+1); }
+function hrs(a,b){
+  if(!a||!b) return null;
+  const [h1,m1]=a.split(":").map(Number),[h2,m2]=b.split(":").map(Number);
+  let d=(h2*60+m2)-(h1*60+m1); if(d<0) d+=1440;   // handles night shift
+  return Math.round(d/60*100)/100;
+}
+function calc(){
+  let all=0,n=0,t=0;
+  [...tbody.children].forEach(tr=>{
+    const on=tr.querySelector(".pres").checked;
+    tr.classList.toggle("absent",!on);
+    ["tin","tout","trade"].forEach(c=>tr.querySelector("."+c).disabled=!on);
+    const h=hrs(tr.querySelector(".tin").value,tr.querySelector(".tout").value);
+    tr.querySelector(".hr").textContent = (on&&h!=null)?h.toFixed(2):"–";
+    if(!tr.dataset.manual) all++;
+    if(on && tr.querySelector(".name").value.trim()){ n++; if(h!=null) t+=h; }
+  });
+  $("tAll").textContent=all; $("tLab").textContent=n; $("tAbs").textContent=[...tbody.children].filter(tr=>!tr.dataset.manual&&!tr.querySelector(".pres").checked).length;
+  $("tHrs").textContent=t.toFixed(2);
+  $("emptyMsg").style.display = tbody.children.length?"none":"block";
+}
+function applyDefaults(force){
+  const i=$("defIn").value,o=$("defOut").value;
+  [...tbody.children].forEach(tr=>{
+    if(force||!tr.dataset.inDirty){ tr.querySelector(".tin").value=i; if(force) delete tr.dataset.inDirty; }
+    if(force||!tr.dataset.outDirty){ tr.querySelector(".tout").value=o; if(force) delete tr.dataset.outDirty; }
+  });
+  calc(); save();
+}
+function collect(){
+  const labour=[],absent=[];
+  [...tbody.children].forEach(tr=>{
+    const name=tr.querySelector(".name").value.trim(), on=tr.querySelector(".pres").checked;
+    if(!on){ if(!tr.dataset.manual && name) absent.push(name); return; }
+    if(!name && !tr.querySelector(".tin").value && !tr.querySelector(".tout").value) return;
+    labour.push({name,trade:tr.querySelector(".trade").value,in:tr.querySelector(".tin").value,out:tr.querySelector(".tout").value});
+  });
+  return {project:$("project").value,supervisor:$("supervisor").value.trim(),date:$("date").value,labour,absent,
+    planned:$("planned").value.trim(),executed:$("executed").value.trim(),completed:$("completed").value.trim(),
+    nextplan:$("nextplan").value.trim(),remarks:$("remarks").value.trim()};
+}
+/* ----- draft auto-save (this device only) ----- */
+function save(){
+  try{
+    const rows=[...tbody.children].map(tr=>({name:tr.querySelector(".name").value,trade:tr.querySelector(".trade").value,manual:!!tr.dataset.manual,
+      present:tr.querySelector(".pres").checked,in:tr.querySelector(".tin").value,out:tr.querySelector(".tout").value,
+      inDirty:!!tr.dataset.inDirty,outDirty:!!tr.dataset.outDirty}));
+    const d={project:$("project").value,supervisor:$("supervisor").value,date:$("date").value,defIn:$("defIn").value,defOut:$("defOut").value,rows};
+    ["planned","executed","completed","nextplan","remarks"].forEach(f=>d[f]=$(f).value);
+    localStorage.setItem("dlr_draft",JSON.stringify(d));
+  }catch(e){}
+}
+function restore(){
+  try{
+    const d=JSON.parse(localStorage.getItem("dlr_draft")||"null"); if(!d||!d.project) return;
+    if(![...$("project").options].some(o=>o.value===d.project)) return;
+    $("project").value=d.project; $("supervisor").value=d.supervisor||""; if(d.date) $("date").value=d.date;
+    $("defIn").value=d.defIn||""; $("defOut").value=d.defOut||"";
+    tbody.innerHTML=""; (d.rows||[]).forEach(row);
+    ["planned","executed","completed","nextplan","remarks"].forEach(f=>{ if(d[f]) $(f).value=d[f]; });
+  }catch(e){}
+}
+/* ----- project selection ----- */
+function dirty(){ return [...tbody.children].some(tr=>tr.dataset.inDirty||tr.dataset.outDirty||!tr.querySelector(".pres").checked||tr.dataset.manual); }
+function onProject(prev){
+  const name=$("project").value;
+  if(prev!==undefined && dirty() && !confirm("Changing the project will reset the labour list. Continue?")){ $("project").value=prev; return; }
+  tbody.innerHTML="";
+  const p=DATA.projects.find(x=>x.name===name);
+  if(!p){ $("supervisor").value=""; $("defIn").value=$("defOut").value=""; calc(); return; }
+  $("supervisor").value=p.supervisor||""; $("defIn").value=p.in||""; $("defOut").value=p.out||"";
+  DATA.employees.filter(e=>e.project.toLowerCase()===name.toLowerCase())
+    .forEach(e=>row({name:e.name,trade:e.trade,in:p.in,out:p.out}));
+  $("emptyMsg").textContent = tbody.children.length?"":"No employees are assigned to this project in the Employees sheet. Use “+ Add other labour”.";
+  calc(); save();
+}
+function show(t,ok){ msg.textContent=t; msg.style.color=ok?"var(--ok)":"var(--err)"; }
+function today(){ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
+
+async function loadData(){
+  if(SCRIPT_URL.startsWith("PASTE")){ show("Setup incomplete: SCRIPT_URL is not set in index.html."); return; }
+  try{
+    const r=await fetch(SCRIPT_URL+"?action=data"); DATA=await r.json();
+    try{ localStorage.setItem("dlr_data",JSON.stringify(DATA)); }catch(e){}
+  }catch(e){
+    try{ DATA=JSON.parse(localStorage.getItem("dlr_data")||"null")||DATA; show("Offline – using the last saved project / employee list.",true); }catch(x){}
+  }
+  const cur=$("project").value;
+  $("project").innerHTML='<option value="">– Select project –</option>'+DATA.projects.map(p=>`<option value="${esc(p.name)}">${esc(p.name)}</option>`).join("");
+  $("project").value=cur;
+  if(!tbody.children.length) restore();
+  calc();
+}
+
+async function submit(){
+  const d=collect();
+  if(!d.project) return show("Please select the Project.");
+  if(!d.supervisor) return show("Please enter the Supervisor Name.");
+  if(!d.date) return show("Please select the Date.");
+  if(!d.labour.length) return show("No labour marked present.");
+  if(d.labour.some(l=>!l.name)) return show("Every extra labour row needs a name.");
+  if(d.labour.some(l=>!l.in||!l.out)) return show("Every present labour needs both In Time and Out Time.");
+  if(!$("pin").value) return show("Please enter the Site PIN.");
+  if(SCRIPT_URL.startsWith("PASTE")) return show("Setup incomplete: SCRIPT_URL is not set in index.html.");
+  d.pin=$("pin").value;
+  $("submit").disabled=true; show("Submitting…",true);
+  try{
+    const r=await fetch(SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(d)});
+    const j=await r.json();
+    if(j.ok){ show("✔ DLR submitted ("+j.id+(j.replaced?", replaced earlier entry":"")+").",true); localStorage.removeItem("dlr_draft"); }
+    else show("Not saved: "+(j.error||"unknown error"));
+  }catch(e){ show("Could not reach Google Sheets. Check your internet and try again. Your entries are still on this screen."); }
+  $("submit").disabled=false;
+}
+
+$("date").value=today();
+$("project").addEventListener("focus",function(){ this.dataset.prev=this.value; });
+$("project").addEventListener("change",function(){ onProject(this.dataset.prev); this.dataset.prev=this.value; });
+$("defIn").addEventListener("change",()=>applyDefaults(false));
+$("defOut").addEventListener("change",()=>applyDefaults(false));
+$("applyAll").onclick=()=>applyDefaults(true);
+$("addRow").onclick=()=>{ if(!$("project").value) return show("Select the project first."); row({manual:true,in:$("defIn").value,out:$("defOut").value}); calc(); };
+document.addEventListener("input",()=>{calc();save();});
+$("submit").onclick=submit;
+$("clear").onclick=()=>{ if(confirm("Clear everything on this form?")){ localStorage.removeItem("dlr_draft"); location.reload(); } };
+calc(); loadData();
+</script>
+</body>
+</html>
