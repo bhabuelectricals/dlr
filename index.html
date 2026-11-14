@@ -31,6 +31,8 @@ td.x button{border:0;background:none;color:var(--err);cursor:pointer;font-size:1
 .deft{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border:1px solid var(--line);border-top:0;background:#f4f8fa;padding:8px 10px;font-size:13px;color:var(--navy)}
 .deft label{display:flex;align-items:center;gap:6px;font-weight:bold}.deft input{width:120px;border:1px solid var(--line)}
 .deft button{background:var(--navy);color:#fff;border:0;padding:7px 12px;border-radius:3px;cursor:pointer;font-weight:bold}
+.nm select.stype{background:#e6eef2;font-weight:bold;color:var(--navy);font-size:12px;padding:6px 8px}
+.home{font-size:11px;color:#a05a00;padding:0 10px 3px}
 .hint{font-size:11px;color:#555;flex-basis:100%}
 .empty{padding:16px;text-align:center;color:#666;border:1px solid var(--line);border-top:0;font-size:14px}
 td.pr{width:52px;text-align:center}td.pr input{width:20px;height:20px;background:none}
@@ -114,7 +116,7 @@ textarea{min-height:95px;resize:vertical}
 
 <div class="actions">
   <button id="submit" type="button">Submit DLR</button>
-  <button class="sec" type="button" onclick="window.print()">Print / Save as PDF</button>
+  <button class="sec" type="button" id="pdf">Download / Share PDF</button>
   <button class="sec" type="button" id="clear">Clear form</button>
   <div class="pin"><label for="pin" style="font-size:13px;font-weight:bold;color:var(--navy)">Site PIN</label><input id="pin" type="password" autocomplete="off" inputmode="numeric"></div>
 </div>
@@ -122,6 +124,9 @@ textarea{min-height:95px;resize:vertical}
 <div class="note">Submitting again for the same project and date replaces the earlier entry. Your entries are auto-saved on this device until submitted. Employee and project lists come from the Google Sheet.</div>
 </div>
 
+<script src="lib/jspdf.umd.min.js"></script>
+<script src="lib/jspdf.plugin.autotable.min.js"></script>
+<script src="lib/logo.js"></script>
 <script>
 /* ============ CONFIGURATION ============ */
 // Paste the Web app URL you get after deploying Code.gs (see README.md)
@@ -137,17 +142,46 @@ function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").r
 function row(e){   // e: {name, trade, manual, in, out, present}
   const tr = document.createElement("tr"); tr.className="lab"; tr.dataset.manual = e.manual?"1":"";
   tr.innerHTML = `<td class="pr"><input type="checkbox" class="pres" ${e.present===false?"":"checked"}></td><td class="sl"></td>
-   <td class="nm"><input class="name" value="${esc(e.name||"")}" ${e.manual?'placeholder="Labour name"':"readonly"}></td>
+   <td class="nm">${e.manual?'<select class="stype"><option value="R">Regular Staff</option><option value="T">Temporary Staff</option></select><div class="nmw"></div><div class="home"></div>':`<input class="name" value="${esc(e.name||"")}" readonly>`}</td>
    <td class="tr"><select class="trade"><option value=""></option>${TRADES.map(t=>`<option${t===e.trade?" selected":""}>${t}</option>`).join("")}</select></td>
    <td class="ti"><input class="tin" type="time" value="${e.in||""}"></td><td class="to"><input class="tout" type="time" value="${e.out||""}"></td>
    <td class="hr">–</td><td class="x">${e.manual?'<button type="button" title="Remove" tabindex="-1">✕</button>':""}</td>`;
-  if(e.trade && !TRADES.includes(e.trade)){ const o=document.createElement("option"); o.textContent=e.trade; tr.querySelector(".trade").appendChild(o); tr.querySelector(".trade").value=e.trade; }
+  if(e.trade) setTrade(tr,e.trade);
+  if(e.manual){
+    tr.querySelector(".stype").value=e.stype||"R"; nameField(tr,e.name||"");
+    tr.querySelector(".stype").addEventListener("change",()=>{ nameField(tr,""); calc(); save(); });
+  }
   if(e.inDirty) tr.dataset.inDirty="1"; if(e.outDirty) tr.dataset.outDirty="1";
   tr.querySelector(".tin").addEventListener("input",()=>tr.dataset.inDirty="1");
   tr.querySelector(".tout").addEventListener("input",()=>tr.dataset.outDirty="1");
   tr.querySelector(".pres").addEventListener("change",()=>{calc();save();});
   const x=tr.querySelector(".x button"); if(x) x.onclick=()=>{tr.remove();renum();calc();save();};
   tbody.appendChild(tr); renum();
+}
+function setTrade(tr,t){
+  const s=tr.querySelector(".trade");
+  if(t && ![...s.options].some(o=>o.value===t)){ const o=document.createElement("option"); o.textContent=t; s.appendChild(o); }
+  s.value=t||"";
+}
+function nameField(tr,val){
+  const w=tr.querySelector(".nmw"), home=tr.querySelector(".home"), t=tr.querySelector(".stype").value;
+  home.textContent="";
+  if(t==="R"){
+    const emps=[...DATA.employees].sort((a,b)=>a.name.localeCompare(b.name));
+    w.innerHTML='<select class="name"><option value="">– Select employee –</option>'+emps.map(x=>`<option value="${esc(x.name)}">${esc(x.name)}${x.project?" ("+esc(x.project)+")":""}</option>`).join("")+'</select>';
+    const s=w.querySelector(".name"); s.value=val;
+    const upd=()=>{ const x=DATA.employees.find(z=>z.name===s.value); home.textContent = x? "Assigned site: "+(x.project||"–") : ""; };
+    s.addEventListener("change",()=>{ const x=DATA.employees.find(z=>z.name===s.value); if(x&&x.trade) setTrade(tr,x.trade); upd(); calc(); save(); });
+    upd();
+  } else {
+    w.innerHTML='<input class="name" placeholder="Temporary labour name">'; w.querySelector(".name").value=val;
+  }
+}
+function staffInfo(tr){
+  if(!tr.dataset.manual) return "Regular";
+  if(tr.querySelector(".stype").value==="T") return "Temporary";
+  const nm=tr.querySelector(".name").value, x=DATA.employees.find(z=>z.name===nm), p=$("project").value;
+  return (x && x.project && x.project.toLowerCase()!==p.toLowerCase()) ? "Regular (from "+x.project+")" : "Regular";
 }
 function renum(){ [...tbody.children].forEach((tr,i)=>tr.querySelector(".sl").textContent=i+1); }
 function hrs(a,b){
@@ -185,7 +219,7 @@ function collect(){
     const name=tr.querySelector(".name").value.trim(), on=tr.querySelector(".pres").checked;
     if(!on){ if(!tr.dataset.manual && name) absent.push(name); return; }
     if(!name && !tr.querySelector(".tin").value && !tr.querySelector(".tout").value) return;
-    labour.push({name,trade:tr.querySelector(".trade").value,in:tr.querySelector(".tin").value,out:tr.querySelector(".tout").value});
+    labour.push({name,trade:tr.querySelector(".trade").value,staff:staffInfo(tr),in:tr.querySelector(".tin").value,out:tr.querySelector(".tout").value});
   });
   return {project:$("project").value,supervisor:$("supervisor").value.trim(),date:$("date").value,labour,absent,
     planned:$("planned").value.trim(),executed:$("executed").value.trim(),completed:$("completed").value.trim(),
@@ -194,7 +228,7 @@ function collect(){
 /* ----- draft auto-save (this device only) ----- */
 function save(){
   try{
-    const rows=[...tbody.children].map(tr=>({name:tr.querySelector(".name").value,trade:tr.querySelector(".trade").value,manual:!!tr.dataset.manual,
+    const rows=[...tbody.children].map(tr=>({name:tr.querySelector(".name").value,trade:tr.querySelector(".trade").value,manual:!!tr.dataset.manual,stype:tr.querySelector(".stype")?tr.querySelector(".stype").value:"",
       present:tr.querySelector(".pres").checked,in:tr.querySelector(".tin").value,out:tr.querySelector(".tout").value,
       inDirty:!!tr.dataset.inDirty,outDirty:!!tr.dataset.outDirty}));
     const d={project:$("project").value,supervisor:$("supervisor").value,date:$("date").value,defIn:$("defIn").value,defOut:$("defOut").value,rows};
@@ -250,7 +284,8 @@ async function submit(){
   if(!d.supervisor) return show("Please enter the Supervisor Name.");
   if(!d.date) return show("Please select the Date.");
   if(!d.labour.length) return show("No labour marked present.");
-  if(d.labour.some(l=>!l.name)) return show("Every extra labour row needs a name.");
+  if(d.labour.some(l=>!l.name)) return show("Every extra labour row needs a name (select the employee or type the temporary labour's name).");
+  const seen={}; for(const l of d.labour){ const k=l.name.toLowerCase(); if(seen[k]) return show(l.name+" is listed twice."); seen[k]=1; }
   if(d.labour.some(l=>!l.in||!l.out)) return show("Every present labour needs both In Time and Out Time.");
   if(!$("pin").value) return show("Please enter the Site PIN.");
   if(SCRIPT_URL.startsWith("PASTE")) return show("Setup incomplete: SCRIPT_URL is not set in index.html.");
@@ -265,15 +300,74 @@ async function submit(){
   $("submit").disabled=false;
 }
 
+
+/* ----- PDF (works on phone and PC) ----- */
+function d12(t){ if(!t) return ""; let [h,m]=t.split(":").map(Number); const ap=h>=12?"PM":"AM"; h=h%12||12; return ("0"+h).slice(-2)+":"+("0"+m).slice(-2)+" "+ap; }
+function dFmt(s){ const [y,m,d]=s.split("-"); return d+"-"+["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m-1]+"-"+y; }
+const isMobile = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+async function makePdf(){
+  const d=collect();
+  if(!d.project) return show("Select the project first.");
+  if(!d.date) return show("Please select the Date.");
+  if(!window.jspdf) return show("PDF library did not load. Reload the page and try again.");
+  const {jsPDF}=window.jspdf, doc=new jsPDF({unit:"mm",format:"a4"}), NAVY=[23,97,127], LAB=[220,233,240], M=12, W=210-2*M;
+  show("Preparing PDF…",true);
+  try{ doc.addImage(LOGO_DATA,"PNG",M,10,60,60*950/3543); }catch(e){}
+  doc.setFont("helvetica","bold"); doc.setFontSize(17); doc.setTextColor(...NAVY);
+  doc.text("DAILY LABOUR REPORT (DLR)",210-M,19,{align:"right"});
+  doc.setDrawColor(...NAVY); doc.setLineWidth(0.8); doc.line(M,28,210-M,28);
+  const base={theme:"grid",styles:{font:"helvetica",fontSize:9.5,cellPadding:2.2,lineColor:[120,130,135],lineWidth:0.2,textColor:20},margin:{left:M,right:M}};
+  doc.autoTable({...base,startY:32,body:[["Project Name",d.project],["Supervisor Name",d.supervisor||""],["Date",dFmt(d.date)]],
+    columnStyles:{0:{fillColor:LAB,textColor:NAVY,fontStyle:"bold",cellWidth:45}}});
+  // labour
+  let tot=0; const rows=[]; let n=0;
+  [...tbody.children].forEach(tr=>{
+    if(!tr.querySelector(".pres").checked) return;
+    const name=tr.querySelector(".name").value.trim(); if(!name) return;
+    const i=tr.querySelector(".tin").value,o=tr.querySelector(".tout").value,h=hrs(i,o); if(h!=null) tot+=h;
+    rows.push([++n,name,tr.querySelector(".trade").value,staffInfo(tr),d12(i),d12(o),h==null?"":h.toFixed(2)]);
+  });
+  doc.autoTable({...base,startY:doc.lastAutoTable.finalY+5,
+    head:[[{content:"LABOUR IN / OUT TIME",colSpan:7,styles:{halign:"left"}}],["Sl.","Labour Name","Trade","Staff","In Time","Out Time","Hours"]],
+    body:rows,foot:[[{content:"Present: "+rows.length+"     Absent: "+d.absent.length+"     Total Man-Hours: "+tot.toFixed(2),colSpan:7,styles:{halign:"left"}}]],
+    headStyles:{fillColor:NAVY,textColor:255}, footStyles:{fillColor:[234,241,245],textColor:NAVY,fontStyle:"bold"},
+    showHead:"everyPage",
+    didParseCell:(c)=>{ if(c.section==="head"&&c.row.index===1){ c.cell.styles.fillColor=LAB; c.cell.styles.textColor=NAVY; c.cell.styles.halign="center"; } },
+    columnStyles:{0:{halign:"center",cellWidth:10},4:{halign:"center",cellWidth:24},5:{halign:"center",cellWidth:24},6:{halign:"center",cellWidth:15}}});
+  if(d.absent.length){
+    doc.autoTable({...base,startY:doc.lastAutoTable.finalY+3,body:[["Absent",d.absent.join(", ")]],columnStyles:{0:{fillColor:LAB,textColor:NAVY,fontStyle:"bold",cellWidth:45}}});
+  }
+  [["OVERALL WORK PLANNED (TODAY)",d.planned],["OVERALL WORK EXECUTED (TODAY)",d.executed],["OVERALL WORK COMPLETED (TODAY)",d.completed],["NEXT DAY – WORK PLAN",d.nextplan],["REMARKS",d.remarks]]
+  .forEach(([t,v])=>doc.autoTable({...base,startY:doc.lastAutoTable.finalY+5,head:[[t]],body:[[v||" "]],headStyles:{fillColor:NAVY,textColor:255},
+     bodyStyles:{minCellHeight:20,valign:"top"},rowPageBreak:"avoid"}));
+  let y=doc.lastAutoTable.finalY+22; if(y>272){ doc.addPage(); y=40; }
+  doc.setDrawColor(0); doc.setLineWidth(0.3); doc.line(M,y,M+75,y); doc.line(210-M-75,y,210-M,y);
+  doc.setFontSize(8.5); doc.setTextColor(...NAVY);
+  doc.text("Supervisor In-charge (Name & Signature)",M+37.5,y+4.5,{align:"center"});
+  doc.text("Checked / Approved by (Project Engineer / Manager)",210-M-37.5,y+4.5,{align:"center"});
+  const pc=doc.getNumberOfPages(); doc.setFontSize(8); doc.setTextColor(110);
+  for(let p=1;p<=pc;p++){ doc.setPage(p); doc.text("Bhabu Electricals – Daily Labour Report   |   Page "+p+" of "+pc,105,291,{align:"center"}); }
+  const fname="DLR_"+d.project.replace(/[^A-Za-z0-9]+/g,"_")+"_"+d.date+".pdf";
+  const blob=doc.output("blob"), file=new File([blob],fname,{type:"application/pdf"});
+  if(isMobile() && navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file],title:"Daily Labour Report"}); show("PDF ready.",true); return; }
+    catch(e){ if(e.name==="AbortError"){ show(""); return; } }
+  }
+  const url=URL.createObjectURL(blob), a=document.createElement("a"); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+  show("PDF downloaded ("+fname+").",true);
+}
+
 $("date").value=today();
 $("project").addEventListener("focus",function(){ this.dataset.prev=this.value; });
 $("project").addEventListener("change",function(){ onProject(this.dataset.prev); this.dataset.prev=this.value; });
 $("defIn").addEventListener("change",()=>applyDefaults(false));
 $("defOut").addEventListener("change",()=>applyDefaults(false));
 $("applyAll").onclick=()=>applyDefaults(true);
-$("addRow").onclick=()=>{ if(!$("project").value) return show("Select the project first."); row({manual:true,in:$("defIn").value,out:$("defOut").value}); calc(); };
+$("addRow").onclick=()=>{ if(!$("project").value) return show("Select the project first."); row({manual:true,stype:"R",in:$("defIn").value,out:$("defOut").value}); calc(); };
 document.addEventListener("input",()=>{calc();save();});
 $("submit").onclick=submit;
+$("pdf").onclick=makePdf;
 $("clear").onclick=()=>{ if(confirm("Clear everything on this form?")){ localStorage.removeItem("dlr_draft"); location.reload(); } };
 calc(); loadData();
 </script>
